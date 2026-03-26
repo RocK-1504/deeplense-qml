@@ -1,105 +1,211 @@
+# DeepLense QML — GSoC 2026 | ML4Sci
+
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![PennyLane](https://img.shields.io/badge/PennyLane-QML-10B981?style=for-the-badge)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
-# DeepLense QML — GSoC 2026 | ML4Sci
-## Quantum Machine Learning for Dark Matter Substructure Classification
 
-Classifying strong gravitational lensing images into three dark matter 
-substructure categories using hybrid quantum-classical models built with PennyLane.
+## Quantum ML for Dark Matter Substructure Classification
+
+Classifying strong gravitational lensing images into three dark matter
+substructure categories using a progression of classical and hybrid
+quantum-classical models built with PennyLane and PyTorch.
 
 ---
 
 ## Problem Statement
-Strong gravitational lensing encodes signatures of dark matter substructure 
-in the distortion patterns of background light. This project classifies 
+
+Strong gravitational lensing encodes signatures of dark matter substructure
+in the distortion patterns of background light. This project classifies
 lensing images into three categories:
 
-| Label | Class | 
-|---|---|
+| Label | Class |
+|-------|-------|
 | 0 | No Substructure |
 | 1 | Subhalo Substructure |
 | 2 | Vortex Substructure |
 
 ---
 
-## Results
+## Notebooks
 
-### Model Comparison
-| Model | Accuracy | Mean AUC | Training Time |
-|---|---|---|---|
-| Random Forest + PCA(200) | 41.1% | 0.594 | ~2 min |
-| VQC 8 qubits + PCA(8) | ~34% | 0.518 | 52.6 min |
-| VQC 16 qubits + PCA(16) | ~35% | 0.520 | 158.4 min |
-| CNN-QML Hybrid | TBD | TBD | TBD |
-
-### ROC Curves
-| Classical Baseline | QML Model | QML Model (16 QUBITS)
-|---|---|---|
-| ![ROC Classical](Results/roc_classical_rf.png) | ![ROC QML](Results/roc_qml.png) | ![ROC QML(16)](Results/roc_qml16qu.png) |
+| # | Notebook | Approach | Description |
+|---|----------|----------|-------------|
+| 1 | `01_classical_baseline_rf.ipynb` | Classical | Random Forest + PCA(200) baseline |
+| 2 | `02_vqc_8qubits.ipynb` | Pure QML | Variational Quantum Classifier, 8 qubits + PCA(8) |
+| 3 | `03_vqc_16qubits.ipynb` | Pure QML | Variational Quantum Classifier, 16 qubits + PCA(16) |
+| 4 | `04_hybrid_cnn_qnn.ipynb` | Hybrid  | CNN feature extractor + 4-qubit QNN (**primary submission**) |
 
 ---
 
-## Key Findings
-- Classical RF baseline achieves mean AUC of 0.594 on PCA-reduced pixel features
-- VQC with 8 qubits achieves mean AUC of 0.518 — near random but above baseline
-- Increasing to 16 qubits marginally improves AUC (0.518 → 0.520), suggesting
-  qubit count is not the primary bottleneck
-- PCA encoding loses spatial structure critical for lensing classification —
-  motivating the CNN-QML hybrid approach
+## Results
 
+| Model | AUC (macro) | Accuracy | 
+|-------|-------------|----------|
+| Random Forest + PCA(200) | 0.594 | 41.1% |
+| VQC 8 qubits + PCA(8) | 0.518 | ~34% | 
+| VQC 16 qubits + PCA(16) | 0.520 | ~35% |
+| **CNN-QNN Hybrid (4 qubits)** | **0.620** | **~45%** |
+
+### ROC Curves
+
+| Random Forest | VQC 8 Qubits | VQC 16 Qubits | CNN-QNN Hybrid |
+|---------------|--------------|---------------|----------------|
+| ![RF](results/roc_classical_rf.png) | ![VQC8](results/roc_vqc_8qubits.png) | ![VQC16](results/roc_vqc_16qubits.png) | ![Hybrid](results/roc_hybrid_cnn_qnn.png) |
+
+---
+
+## Comparison with Common Test I (Classical Baseline)
+
+The ResNet18 model from Common Test I serves as the upper-bound classical
+reference for all QML experiments in this repo.
+
+| Model | AUC (macro) | Accuracy | Notes |
+|-------|-------------|----------|-------|
+| **ResNet18 — Common Test I** | **0.7585** | **~57.6%** | Pure classical, fine-tuned |
+| Random Forest + PCA(200) | 0.594 | 41.1% | Classical, no spatial features |
+| VQC 8 qubits + PCA(8) | 0.518 | ~34% | Pure QML, near-random |
+| VQC 16 qubits + PCA(16) | 0.520 | ~35% | Pure QML, near-random |
+| **CNN-QNN Hybrid (4 qubits)** | **0.620** | **~45%** | Hybrid — best QML result |
+
+### Key Takeaway
+
+The full progression tells a clear story:
+
+- **Pure VQC + PCA (~0.52 AUC)** — PCA on raw pixels destroys the spatial
+  structure critical for lensing classification. The quantum circuit never
+  receives meaningful features, performing near-randomly regardless of qubit count.
+
+- **Random Forest + PCA (~0.59 AUC)** — A stronger classical inductive bias
+  partially compensates for poor encoding, but still well below the CNN baseline.
+
+- **CNN-QNN Hybrid (~0.62 AUC)** — Replacing PCA with ResNet18 features gives
+  the quantum layer semantically meaningful input, lifting AUC by ~10 points
+  over pure VQC. Confirms that **data encoding quality is the primary bottleneck**
+  in near-term QML, not circuit expressibility.
+
+- **ResNet18 (~0.76 AUC)** — The classical ceiling. The ~14 point gap between
+  hybrid and classical reflects fundamental near-term quantum constraints:
+  limited qubit count, barren plateau risk, and simulation overhead.
+
+> Full Common Test I implementation: [deeplense-gsoc-common](https://github.com/prathiknambiar/deeplense-lens-classification)
 
 ---
 
 ## Architecture
 
-### Quantum Circuit
-- **Encoding**: AngleEmbedding (Y-rotations) — maps PCA features to qubit angles
-- **Variational layer**: StronglyEntanglingLayers — full qubit entanglement
-- **Measurement**: Pauli-Z expectation values on 3 qubits
-- **Training**: Parameter shift rule via PennyLane-PyTorch interface
-
-### Hybrid Pipeline
+### Pure VQC Pipeline
 ```
-Raw Image (150x150)
-       ↓
-  Resize to 32x32
-       ↓
-  Flatten (1024-dim)
-       ↓
-  PCA (8 or 16 dims)
-       ↓
-  Scale to [-π, π]
-       ↓
-  AngleEmbedding → StronglyEntanglingLayers → PauliZ measurement
-       ↓
-  Linear head (3 logits)
-       ↓
-  CrossEntropyLoss
+Raw Image (150×150)
+      ↓
+Flatten → PCA (8 or 16 dims)
+      ↓
+Scale to [-π, π]
+      ↓
+AngleEmbedding (RY gates on N qubits)
+      ↓
+StronglyEntanglingLayers × N_LAYERS
+      ↓
+PauliZ measurement on 3 qubits
+      ↓
+Linear head (3 logits)
+      ↓
+CrossEntropyLoss
+```
+
+### Hybrid CNN-QNN Pipeline
+```
+Raw Image (150×150)
+      ↓
+ResNet18 (pretrained, ImageNet) → 512-dim features
+      ↓
+Linear(512 → 4) + tanh
+      ↓
+AngleEmbedding (RX gates on 4 qubits)
+      ↓
+StronglyEntanglingLayers × 3
+      ↓
+PauliZ measurement on 4 qubits
+      ↓
+Linear(4 → 3) + scale × 2.0
+      ↓
+CrossEntropyLoss
 ```
 
 ---
 
-### Dataset
+## Quantum Circuit Design
+
+### Data Encoding: Angle Embedding
+
+Each feature is encoded as a rotation angle on a qubit using AngleEmbedding:
+
+$$|\psi_{in}\rangle = \bigotimes_{i=1}^{n} R_X(x_i)|0\rangle$$
+
+For pure VQC: features are PCA components scaled to [-π, π].
+For hybrid: features are ResNet18 embeddings passed through tanh.
+
+### Variational Ansatz: Strongly Entangling Layers
+
+Each layer consists of:
+1. Single-qubit rotations (RZ·RY·RZ) with trainable parameters
+2. A ring of CNOT entangling gates connecting all qubits
+
+Fully differentiable via the **parameter-shift rule**, enabling gradient-based
+optimisation through PennyLane's PyTorch interface.
+
+### Measurement
+
+Expectation value of the Pauli-Z operator measured on each qubit:
+
+$$o_k = \langle \psi | Z_k | \psi \rangle, \quad k \in \{0, 1, ..., n-1\}$$
+
+Outputs fed into a classical linear head to produce class logits.
+
+### Why 4 Qubits for the Hybrid?
+
+Classical simulation of quantum circuits scales as O(2^n) in memory.
+4 qubits keeps training feasible on standard hardware while still
+demonstrating a meaningful quantum layer with full entanglement.
+
+---
+
+## Key Findings
+
+- **PCA is the bottleneck for pure VQC** — flattening 150×150 images to 8 or
+  16 PCA components destroys spatial structure. Qubit count (8 vs 16) barely
+  matters when the encoding discards most information.
+
+- **CNN features rescue the quantum layer** — replacing PCA with ResNet18
+  features lifts AUC from ~0.52 to ~0.62 despite using fewer qubits (4 vs 8/16).
+
+- **Classical baseline (RF) outperforms pure VQC** — confirms that data encoding
+  quality matters more than quantum circuit expressibility at this scale.
+
+- **Hybrid CNN-QNN is the sweet spot** — best AUC of all QML approaches while
+  remaining feasible to simulate on standard hardware.
+
+---
+
+## Weights
+
+Pretrained model weights available via Google Drive:
+- [CNN-QNN Hybrid weights]()
+
+---
+
+## Dataset
+
 DeepLense dataset — not included due to size.
 Available via ML4Sci: https://ml4sci.org
 
 ---
 
-## Evaluation Metrics
-All models evaluated using:
-- **ROC curve** (one-vs-rest, per class)
-- **AUC score** (primary metric)
-- Per-class precision, recall, F1-score
-
----
-
-## Author
-**Prathik M Nambiar**  
-B.E. Computer Science and Engineering  
-PES University, Bangalore  
-GSoC 2026 — ML4Sci Specific Test III: Quantum ML
+## Dependencies
+```bash
+torch torchvision pennylane scikit-learn numpy matplotlib
+```
 
 ---
 
@@ -115,11 +221,15 @@ GSoC 2026 — ML4Sci Specific Test III: Quantum ML
 - Hezaveh et al. (2017). Fast Automated Analysis of Strong Gravitational Lensing with CNNs. *Nature*.
 - Varma et al. (2020). DeepLense: Deep Learning for Strong Gravitational Lens Analysis. *ML4Sci*.
 
-**Frameworks and Tools**
-- PennyLane: Bergholm et al. (2018). PennyLane: Automatic Differentiation of Hybrid Quantum-Classical Computations. [arXiv:1811.04968](https://arxiv.org/abs/1811.04968)
-- PyTorch: Paszke et al. (2019). PyTorch: An Imperative Style, High-Performance Deep Learning Library. *NeurIPS*.
-- Scikit-learn: Pedregosa et al. (2011). Scikit-learn: Machine Learning in Python. *JMLR*.
+**Frameworks**
+- PennyLane: Bergholm et al. (2018). [arXiv:1811.04968](https://arxiv.org/abs/1811.04968)
+- PyTorch: Paszke et al. (2019). *NeurIPS*.
+- Scikit-learn: Pedregosa et al. (2011). *JMLR*.
 
-**Demos and Documentation**
-- PennyLane Variational Classifier Demo: https://pennylane.ai/qml/demos/tutorial_variational_classifier
-- ML4Sci DeepLense Project: https://ml4sci.org
+---
+
+## Author
+
+**Prathik M Nambiar**
+B.Tech. Computer Science and Engineering, PES University, Bangalore
+GSoC 2026 — ML4Sci | Specific Test III: Quantum ML
