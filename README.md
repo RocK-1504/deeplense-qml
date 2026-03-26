@@ -50,9 +50,12 @@ lensing images into three categories:
 
 ### ROC Curves
 
-| Random Forest | VQC 8 Qubits | VQC 16 Qubits | CNN-QNN Hybrid |
-|---------------|--------------|---------------|----------------|
-| ![RF](results/roc_classical_rf.png) | ![VQC8](results/roc_vqc_8qubits.png) | ![VQC16](results/roc_vqc_16qubits.png) | ![Hybrid](results/roc_hybrid_cnn_qnn.png) |
+| Random Forest | VQC 8 Qubits | VQC 16 Qubits | 
+|---------------|--------------|---------------|
+| ![RF](results/roc_classical_rf.png) | ![VQC8](results/roc_vqc_8qubits.png) | ![VQC16](results/roc_vqc_16qubits.png) |
+
+CNN-QNN Hybrid
+![Hybrid](results/roc_hybrid_cnn_qnn.png) 
 
 ---
 
